@@ -1,0 +1,191 @@
+iceberg {
+    topic security.sla {
+        rule check-active-probes {
+            keys [ destination-ip source-ip ];
+            sensor active-probe {
+                iAgent {
+                    file active_probes.yml;
+                    table ActiveFlowsTable;
+                    frequency 20s;
+                    args active-probe-params-name {
+                        arg-value "{{probe-params-name}}";
+                    }
+                }
+            }
+            field appname {
+                sensor active-probe {
+                    path appname;
+                }
+                type string;
+            }
+            field destination-ip {
+                sensor active-probe {
+                    path destination-ip;
+                }
+                type string;
+            }
+            field jitter-dynamic-threhold {
+                formula {
+                    dynamic-threshold {
+                        algorithm k-means;
+                        learning-period 7d;
+                        pattern-periodicity 1h;
+                        field-name "$two-way-jitter";
+                    }
+                }
+                type integer;
+            }
+            field jitter-static-threshold {
+                constant {
+                    value "{{jitter-threshold}}";
+                }
+                type integer;
+            }
+            field packet-loss {
+                sensor active-probe {
+                    path packet-loss;
+                }
+                type integer;
+            }
+            field rtt {
+                sensor active-probe {
+                    path rtt;
+                }
+                type integer;
+            }
+            field rtt-dynamic-threshold {
+                formula {
+                    dynamic-threshold {
+                        algorithm 3sigma;
+                        learning-period 7d;
+                        pattern-periodicity 1h;
+                        field-name "$rtt";
+                    }
+                }
+                type integer;
+            }
+            field rtt-static-threshold {
+                constant {
+                    value "{{rtt-threshold}}";
+                }
+                type integer;
+            }
+            field source-ip {
+                sensor active-probe {
+                    path source-ip;
+                }
+                type string;
+            }
+            field two-way-jitter {
+                sensor active-probe {
+                    path two-way;
+                }
+                type integer;
+            }
+            trigger active-probe-jitter {
+                frequency 20s;
+                term is-jitter-nok {
+                    when {
+                        greater-than "$two-way-jitter" "$jitter-static-threshold";
+                    }
+                    then {
+                        status {
+                            color red;
+                            message "Active probe jitter($two-way-jitter) from $source-ip to $destination-ip is above static threshold. Ingress jitter:$ingress-jitter and egress-jitter:$egress-jitter";
+                        }
+                    }
+                }
+                term jitter-above-dt {
+                    when {
+                        equal-to "$jitter-dynamic-threhold" 1;
+                    }
+                    then {
+                        status {
+                            color yellow;
+                            message "Active probe jitter($two-way-jitter) from $source-ip to $destination-ip is above dynamic threshold. Ingress jitter:$ingress-jitter and egress-jitter:$egress-jitter";
+                        }
+                    }
+                }
+                term jitter-fine {
+                    then {
+                        status {
+                            color green;
+                            message "Active probe jitter from $source-ip to $destination-ip is: $two-way-jitter. Ingress jitter:$ingress-jitter and egress-jitter:$egress-jitter";
+                        }
+                    }
+                }
+            }
+            trigger active-probe-packet-loss {
+                frequency 20s;
+                term is-packet-loss {
+                    when {
+                        greater-than "$packet-loss" 0;
+                    }
+                    then {
+                        status {
+                            color red;
+                            message "Active probe packet loss($packet-loss) observed from $source-ip to $destination-ip";
+                        }
+                    }
+                }
+                term no-packet-loss {
+                    then {
+                        status {
+                            color green;
+                            message "Active probe $source-ip to $destination-ip RTT is normal";
+                        }
+                    }
+                }
+            }
+            trigger active-probe-rtt {
+                frequency 20s;
+                term rtt-above-threshold {
+                    when {
+                        greater-than "$rtt" "$rtt-static-threshold";
+                    }
+                    then {
+                        status {
+                            color red;
+                            message "Active probe RTT($rtt) from $source-ip to $destination-ip is above static threshold";
+                        }
+                    }
+                }
+                term rtt-above-dt {
+                    when {
+                        equal-to "$rtt-dynamic-threshold" 1;
+                    }
+                    then {
+                        status {
+                            color yellow;
+                            message "Active probe RTT($rtt) from $source-ip to $destination-ip is above dynamic threshold";
+                        }
+                    }
+                }
+                term rtt-fine {
+                    then {
+                        status {
+                            color green;
+                            message "Active probe RTT from $source-ip to $destination-ip is: $rtt";
+                        }
+                    }
+                }
+            }
+            variable jitter-threshold {
+                value 10000;
+                description "Input jitter threshold";
+                type int;
+            }
+            variable probe-params-name {
+                value PREMIUM-INTERNET;
+                description "Input active probe params name";
+                type sensor-argument;
+            }
+            variable rtt-threshold {
+                value 20000;
+                description "Input rtt static threshold";
+                type int;
+            }
+        }
+    }
+}
+

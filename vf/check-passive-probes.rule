@@ -1,0 +1,208 @@
+iceberg {
+    topic security.sla {
+        rule check-passive-probes {
+            keys appname;
+            sensor passive-probes {
+                iAgent {
+                    file passive_probes.yml;
+                    table PassiveFlowsTable;
+                    frequency 20s;
+                    args application {
+                        arg-value "{{application-name}}";
+                    }
+                    args destination-group-name {
+                        arg-value "{{destination-group-name}}";
+                    }
+                    args profile-name {
+                        arg-value "{{profile-name}}";
+                    }
+                }
+            }
+            field active-probe-name {
+                sensor passive-probes {
+                    path probe-name;
+                }
+                type string;
+            }
+            field appname {
+                sensor passive-probes {
+                    path appname;
+                }
+                type string;
+            }
+            field jitter-jynamic-threshold {
+                formula {
+                    dynamic-threshold {
+                        algorithm k-means;
+                        learning-period 7d;
+                        pattern-periodicity 1h;
+                        field-name "$two-way-jitter";
+                    }
+                }
+                type integer;
+            }
+            field jitter-static-threshold {
+                constant {
+                    value "{{jitter-threshold}}";
+                }
+                type integer;
+            }
+            field packet-loss {
+                sensor passive-probes {
+                    path packet-loss;
+                }
+                type integer;
+            }
+            field profile-name {
+                sensor passive-probes {
+                    path profile-name;
+                }
+                type string;
+            }
+            field rtt {
+                sensor passive-probes {
+                    path rtt;
+                }
+                type integer;
+            }
+            field rtt-dynamic-threshold {
+                formula {
+                    dynamic-threshold {
+                        algorithm k-means;
+                        learning-period 7d;
+                        pattern-periodicity 1d;
+                        field-name "$rtt";
+                    }
+                }
+                type integer;
+            }
+            field rtt-static-threshold {
+                constant {
+                    value "{{rtt-threshold}}";
+                }
+                type integer;
+            }
+            field sla-state {
+                sensor passive-probes {
+                    path app-state;
+                }
+                type string;
+            }
+            field two-way-jitter {
+                sensor passive-probes {
+                    path two-way;
+                }
+                type integer;
+            }
+            trigger passive-probe-jitter {
+                frequency 20s;
+                term is-jitter-above-st {
+                    when {
+                        greater-than "$two-way-jitter" "$jitter-static-threshold";
+                    }
+                    then {
+                        status {
+                            color red;
+                            message "Passive probe 2way jitter($two-way-jitter) to $dest-ip is above static threshold. Ingress jitter:$ingress-jitter and egress-jitter:$egress-jitter";
+                        }
+                    }
+                }
+                term is-jitter-above-dt {
+                    when {
+                        equal-to "$jitter-jynamic-threshold" 1;
+                    }
+                    then {
+                        status {
+                            color yellow;
+                            message "Passive probe 2way jitter($two-way-jitter) to $dest-ip is above dynamic threshold. Ingress jitter:$ingress-jitter and egress-jitter:$egress-jitter";
+                        }
+                    }
+                }
+                term is-jitter-normal {
+                    then {
+                        status {
+                            color green;
+                            message "Passive probe 2way jitter($two-way-jitter) to $dest-ip RTT is normal. Ingress jitter:$ingress-jitter and egress-jitter:$egress-jitter";
+                        }
+                    }
+                }
+            }
+            trigger passive-probe-packetloss {
+                frequency 20s;
+                term is-packet-loss {
+                    when {
+                        greater-than "$packet-loss" 0;
+                    }
+                    then {
+                        status {
+                            color red;
+                            message "Passive probe packet loss($packet-loss) observed to $dest-ip";
+                        }
+                    }
+                }
+                term no-packet-loss {
+                    then {
+                        status {
+                            color green;
+                            message "Passive probe to $dest-ip is fine";
+                        }
+                    }
+                }
+            }
+            trigger passive-probe-rtt {
+                frequency 20s;
+                term is-rtt-above-st {
+                    when {
+                        greater-than "$rtt" "$rtt-static-threshold";
+                    }
+                    then {
+                        status {
+                            color red;
+                            message "Passive probe rtt($rtt) to $dest-ip is above static threshold";
+                        }
+                    }
+                }
+                term is-rtt-above-dt {
+                    when {
+                        equal-to "$rtt-dynamic-threshold" 1;
+                    }
+                    then {
+                        status {
+                            color yellow;
+                            message "Passive probe rtt($rtt) to $dest-ip is above dynamic threshold";
+                        }
+                    }
+                }
+                term is-rtt-normal {
+                    then {
+                        status {
+                            color green;
+                            message "Passive probe rtt($rtt) to $dest-ip is normal";
+                        }
+                    }
+                }
+            }
+            variable application-name {
+                value junos:HTTP;
+                type sensor-argument;
+            }
+            variable destination-group-name {
+                value HUB4;
+                type sensor-argument;
+            }
+            variable jitter-threshold {
+                value 10000;
+                type int;
+            }
+            variable profile-name {
+                value pr_apbr_Default;
+                type sensor-argument;
+            }
+            variable rtt-threshold {
+                value 20000;
+                type int;
+            }
+        }
+    }
+}
+

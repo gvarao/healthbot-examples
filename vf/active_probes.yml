@@ -1,0 +1,19 @@
+---
+ActiveFlowsTable:
+  rpc: show-apbr-sla-active-statistics
+  args:
+    active-probe-params-name: Null
+  item: apbr-active-statistics-info
+  key: apbr-active-statistics-details-src-ip
+  view: ActiveFlowsView
+
+ActiveFlowsView:
+  fields:
+    source-ip: apbr-active-statistics-details-src-ip
+    appname: apbr-prof-app-appname
+    destination-ip: apbr-active-statistics-details-dest-ip
+    packet-loss: apbr-active-statistics-details-pkt-loss
+    rtt: apbr-active-statistics-details-rtt
+    two-way: apbr-active-statistics-details-two-way
+    ingress-jitter: apbr-active-statistics-details-ingress-jit
+    egress-jitter: apbr-active-statistics-details-egress-jit

@@ -1,0 +1,7 @@
+iceberg {
+    playbook active-passive-probes {
+        rules [ security.sla/check-active-probes security.sla/check-passive-probes ];
+        synopsis "SLA monitoring playbook";
+    }
+}
+

@@ -1,0 +1,27 @@
+---
+PassiveFlowsTable:
+  rpc: show-apbr-sla-information
+  args:
+    profile-name: Null
+    application: Null
+    destination-group-name: Null
+  item: . 
+  key: apbr-prof-app-appname
+  view: PassiveFlowsView
+
+PassiveFlowsView:
+  fields:
+    appname: apbr-prof-app-appname
+    appid: apbr-prof-app-appid
+    profile-name: apbr-prof-app-profname
+    rule-name: apbr-prof-app-rulename
+    app-state: apbr-prof-app-appstate
+    ri-name: apbr-prof-app-riname
+    sla-name: apbr-prof-app-slaname
+    probe-name: apbr-prof-app-prbname
+    dest-ip: apbr-prof-app-ip
+    packet-loss: apbr-prof-app-pkt-loss
+    rtt: apbr-prof-app-rtt
+    two-way: apbr-prof-app-two-way
+    ingress-jitter: apbr-prof-app-ing-jit
+    egress-jitter: apbr-prof-app-egr-jit
